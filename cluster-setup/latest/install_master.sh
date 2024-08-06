@@ -179,26 +179,17 @@ systemctl restart containerd
 systemctl enable kubelet && systemctl start kubelet
 
 
+
 ### init k8s
-rm /root/.kube/config || true
-kubeadm init --kubernetes-version=${KUBE_VERSION} --ignore-preflight-errors=NumCPU --skip-token-print --pod-network-cidr 192.168.0.0/16
+kubeadm reset -f
+systemctl daemon-reload
+service kubelet start
+
+# Initialize Kubernetes cluster with private IP address
+kubeadm init --apiserver-advertise-address=${1} --kubernetes-version=${KUBE_VERSION} --ignore-preflight-errors=NumCPU --skip-token-print --pod-network-cidr 192.168.0.0/16
 
 mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 
 ### CNI
-kubectl apply -f https://raw.githubusercontent.com/killer-sh/cks-course-environment/master/cluster-setup/calico.yaml
-
-
-# etcdctl
-ETCDCTL_VERSION=v3.5.1
-ETCDCTL_ARCH=$(dpkg --print-architecture)
-ETCDCTL_VERSION_FULL=etcd-${ETCDCTL_VERSION}-linux-${ETCDCTL_ARCH}
-wget https://github.com/etcd-io/etcd/releases/download/${ETCDCTL_VERSION}/${ETCDCTL_VERSION_FULL}.tar.gz
-tar xzf ${ETCDCTL_VERSION_FULL}.tar.gz ${ETCDCTL_VERSION_FULL}/etcdctl
-mv ${ETCDCTL_VERSION_FULL}/etcdctl /usr/bin/
-rm -rf ${ETCDCTL_VERSION_FULL} ${ETCDCTL_VERSION_FULL}.tar.gz
-
-echo
-echo "### COMMAND TO ADD A WORKER NODE ###"
-kubeadm token create --print-join-command --ttl 0
+kubectl apply -f https://raw.githubusercontent.com/killer-sh/cks-course-environment/master
